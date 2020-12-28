@@ -18,7 +18,9 @@ def terminate():
     pygame.quit()
     sys.exit()
 
+
 def start_screen():
+    """Заставка, пока нерабочая"""
     intro_text = ["ЗАСТАВКА", "",
                   "Правила игры",
                   "Если в правилах несколько строк,",
@@ -49,11 +51,12 @@ def start_screen():
 
 
 def load_image(name, color_key=None, format="jpg"):
+    """Загрузка изображения, измененная версия из учебника, нужно уазывать формат, если картинка png"""
     fullname = os.path.join('img', name)
     image = pygame.image.load(fullname)
     if format != "png":
         image = image.convert()
-    if color_key is not None:
+    if color_key is not None and format != "png":
         if color_key == -1:
             color_key = image.get_at((0, 0))
         image.set_colorkey(color_key)
@@ -63,6 +66,7 @@ def load_image(name, color_key=None, format="jpg"):
 
 
 def load_level(filename):
+    """Загрузка уровня, так же, как и в учебнике"""
     filename = os.path.join('data', filename)
     # читаем уровень, убирая символы перевода строки
     with open(filename, 'r') as mapFile:
@@ -76,11 +80,12 @@ def load_level(filename):
 
 
 def generate_level(level):
+    """Генерация уровня, берется из текстового файла в папке data"""
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
-                pass
+                pass  # ничего не делаем, так как у нас есть фон, и поэтому свободные клетки не надо ни как обозначивать
             elif level[y][x] == 'c':
                 Tile('cactus', x, y)
             elif level[y][x] == 't':
@@ -92,15 +97,15 @@ def generate_level(level):
 
 
 class TombWall(pygame.sprite.Sprite):
+    """Загрзука стены, в дальнейшем будем использовать"""
     def __init__(self):
         super().__init__(all_sprites)
         self.image = load_image("wall.png")
         self.rect = self.image.get_rect()
-        self.image_entry = load_image("entry.png")
-        self.rect_entry = self.image_entry.get_rect()
 
 
 class Entry(pygame.sprite.Sprite):
+    """Вход, так же в последствии будем использовать"""
     def __init__(self):
         super().__init__(all_sprites)
         self.image = load_image("entry.png")
@@ -110,6 +115,7 @@ class Entry(pygame.sprite.Sprite):
 
 
 class Background(pygame.sprite.Sprite):
+    """Фон игры"""
     def __init__(self):
         super().__init__(all_sprites)
         self.image = load_image("background.jpg")
@@ -118,6 +124,7 @@ class Background(pygame.sprite.Sprite):
 
 
 class Hero(pygame.sprite.Sprite):
+    """Главный герой"""
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites)
         self.image = load_image("hero.png", format="png")
@@ -158,6 +165,7 @@ class Hero(pygame.sprite.Sprite):
 
 
 class Tile(pygame.sprite.Sprite):
+    """Класс из учебника, для реализации 'стенок'"""
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
