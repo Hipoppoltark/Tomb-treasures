@@ -4,19 +4,23 @@ import os
 
 
 FPS = 30
-SIZE = WIDTH, HEIGHT = 900, 585
+SIZE = WIDTH, HEIGHT = 900, 500
 CELL_SIZE = 50
-WIDTH_FIELD = 18
-HEIGHT_FIELD = 8
-margin = 185
-tile_width = tile_height = 50
+CAM_SIZE = CAM_X, CAM_Y = 18, 10
+tile_width, tile_height = round(WIDTH / CAM_X), round(HEIGHT / CAM_Y)
+margin = int((185 * tile_height) / 50)
 pygame.init()
-screen = pygame.display.set_mode(SIZE)
+screen = pygame.display.set_mode((CAM_X * tile_width, CAM_Y * tile_height))
 
 
 def terminate():
     pygame.quit()
     sys.exit()
+
+def setle(x, s=True):
+    if s:
+        return int((x * tile_width) / 50)
+    return int((x * tile_height) / 50)
 
 def start_screen():
     intro_text = ["ЗАСТАВКА", "",
@@ -59,21 +63,18 @@ def load_image(name, color_key=None, format="jpg"):
         image.set_colorkey(color_key)
     elif format == "png":
         image = image.convert_alpha()
-    return image
+    return pygame.transform.scale(image, (setle(image.get_width(), 1),
+                                          setle(image.get_height(), 0)))
 
 
 def load_level(filename):
     filename = os.path.join('data', filename)
-    # читаем уровень, убирая символы перевода строки
     with open(filename, 'r') as mapFile:
         level_map = [line.strip() for line in mapFile]
 
-    # и подсчитываем максимальную длину
     max_width = max(map(len, level_map))
 
-    # дополняем каждую строку пустыми клетками ('.')
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
-
 
 def generate_level(level):
     new_player, x, y = None, None, None
@@ -98,6 +99,7 @@ class TombWall(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.image_entry = load_image("entry.png")
         self.rect_entry = self.image_entry.get_rect()
+        self.pos_x = self.pos_y = 0
 
 
 class Entry(pygame.sprite.Sprite):
@@ -105,8 +107,8 @@ class Entry(pygame.sprite.Sprite):
         super().__init__(all_sprites)
         self.image = load_image("entry.png")
         self.rect = self.image.get_rect()
-        self.rect.x = 380
-        self.rect.y = 43
+        self.rect.x = setle(380, 1)
+        self.rect.y = setle(43, 0)
 
 
 class Background(pygame.sprite.Sprite):
@@ -114,7 +116,7 @@ class Background(pygame.sprite.Sprite):
         super().__init__(all_sprites)
         self.image = load_image("background.jpg")
         self.rect = self.image.get_rect()
-        self.rect.y = 185
+        self.rect.y = setle(185, 0)
 
 
 class Hero(pygame.sprite.Sprite):
@@ -170,9 +172,7 @@ class Tile(pygame.sprite.Sprite):
     def update_rect(self):
         self.rect.topleft = (
             tile_width * self.pos_x + (tile_width - self.rect.width) // 2,
-            margin + tile_height * self.pos_y + (tile_height - self.rect.height) // 2
-        )
-
+            margin + tile_height * self.pos_y + (tile_height - self.rect.height) // 2)
 
 
 clock = pygame.time.Clock()
