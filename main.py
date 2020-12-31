@@ -6,7 +6,8 @@ import os
 FPS = 30
 SIZE = WIDTH, HEIGHT = 900, 500
 CELL_SIZE = 50
-CAM_SIZE = CAM_X, CAM_Y = 18, 10
+CAM_SIZE = CAM_X, CAM_Y = 9, 5
+FIELD_WIDTH, FIELD_HEIGHT = 18, 11
 tile_width, tile_height = round(WIDTH / CAM_X), round(HEIGHT / CAM_Y)
 margin = int((185 * tile_height) / 50)
 pygame.init()
@@ -57,7 +58,7 @@ def load_image(name, color_key=None, format="jpg"):
     image = pygame.image.load(fullname)
     if format != "png":
         image = image.convert()
-    if color_key is not None:
+    if color_key is not None and format != "png":
         if color_key == -1:
             color_key = image.get_at((0, 0))
         image.set_colorkey(color_key)
@@ -86,6 +87,8 @@ def generate_level(level):
                 Tile('cactus', x, y)
             elif level[y][x] == 't':
                 Tile('tumbleweed', x, y)
+            elif level[y][x] == '_':
+                Tile('invisible', x, y)
             elif level[y][x] == '@':
                 new_player = Hero(x, y)
     # вернем игрока, а также размер поля в клетках
@@ -109,6 +112,8 @@ class Entry(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = setle(380, 1)
         self.rect.y = setle(43, 0)
+        self.pos_x = self.rect.x // tile_width
+        self.pos_y = self.rect.y // tile_height
 
 
 class Background(pygame.sprite.Sprite):
@@ -117,6 +122,8 @@ class Background(pygame.sprite.Sprite):
         self.image = load_image("background.jpg")
         self.rect = self.image.get_rect()
         self.rect.y = setle(185, 0)
+        self.pos_x = self.rect.x // tile_width
+        self.pos_y = self.rect.y // tile_height
 
 
 class Hero(pygame.sprite.Sprite):
@@ -175,25 +182,51 @@ class Tile(pygame.sprite.Sprite):
             margin + tile_height * self.pos_y + (tile_height - self.rect.height) // 2)
 
 
+class Camera():
+    def __init__(self):
+        self.cx = self.cy = 0
+
+    def move(self, object):
+        object.rect.x = object.pos_x * tile_width - self.cx
+        object.rect.y = object.pos_y * tile_width - self.cy
+
+    def update(self, target):
+        self.cx = target.pos_x * tile_width + target.rect.w // 2 - WIDTH // 2
+        self.cy = target.pos_y * tile_height + target.rect.h // 2 - HEIGHT // 2
+        if self.cx + WIDTH >= FIELD_WIDTH * tile_width:
+            self.cx = FIELD_WIDTH * tile_width - WIDTH
+        if self.cx < 0:
+            self.cx = 0
+        if self.cy + HEIGHT >= FIELD_HEIGHT * tile_height:
+            self.cy = FIELD_HEIGHT * tile_height - HEIGHT
+        if self.cy < 0:
+            self.cy = 0
+        for obj in all_sprites:
+            self.move(obj)
+
+
 clock = pygame.time.Clock()
 tile_images = {
     'cactus': load_image('cactus.png', format="png"),
-    'tumbleweed': load_image('tumbleweed.png', format="png")
+    'tumbleweed': load_image('tumbleweed.png', format="png"),
+    'invisible': load_image('invisible.png', format="png")
 }
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 TombWall()
 Entry()
-Background()
+background = Background()
 level = load_level("level1.txt")
 player, level_x, level_y = generate_level(level)
 board = pygame.sprite.Group()
+camera = Camera()
 while True:
     events = pygame.event.get()
     for event in events:
         if event.type == pygame.QUIT:
             terminate()
     player.update(events)
+    camera.update(player)
     all_sprites.draw(screen)
     tiles_group.draw(screen)
     pygame.display.flip()
