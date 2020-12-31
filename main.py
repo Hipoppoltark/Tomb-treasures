@@ -6,8 +6,7 @@ import os
 FPS = 30
 SIZE = WIDTH, HEIGHT = 900, 500
 CELL_SIZE = 50
-CAM_SIZE = CAM_X, CAM_Y = 9, 5
-FIELD_WIDTH, FIELD_HEIGHT = 18, 11
+CAM_SIZE = CAM_X, CAM_Y = 18, 10
 tile_width, tile_height = round(WIDTH / CAM_X), round(HEIGHT / CAM_Y)
 margin = int((185 * tile_height) / 50)
 pygame.init()
@@ -79,6 +78,8 @@ def load_level(filename):
 
 def generate_level(level):
     new_player, x, y = None, None, None
+    global Field_width, Field_height
+    Field_width, Field_height = len(level[0]), len(level)
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
@@ -111,9 +112,9 @@ class Entry(pygame.sprite.Sprite):
         self.image = load_image("entry.png")
         self.rect = self.image.get_rect()
         self.rect.x = setle(380, 1)
-        self.rect.y = setle(43, 0)
+        self.rect.y = 16
         self.pos_x = self.rect.x // tile_width
-        self.pos_y = self.rect.y // tile_height
+        self.pos_y = self.rect.y / tile_height
 
 
 class Background(pygame.sprite.Sprite):
@@ -193,12 +194,12 @@ class Camera():
     def update(self, target):
         self.cx = target.pos_x * tile_width + target.rect.w // 2 - WIDTH // 2
         self.cy = target.pos_y * tile_height + target.rect.h // 2 - HEIGHT // 2
-        if self.cx + WIDTH >= FIELD_WIDTH * tile_width:
-            self.cx = FIELD_WIDTH * tile_width - WIDTH
+        if self.cx + WIDTH >= Field_width * tile_width:
+            self.cx = Field_width * tile_width - WIDTH
         if self.cx < 0:
             self.cx = 0
-        if self.cy + HEIGHT >= FIELD_HEIGHT * tile_height:
-            self.cy = FIELD_HEIGHT * tile_height - HEIGHT
+        if self.cy + HEIGHT >= Field_height * tile_height:
+            self.cy = Field_height * tile_height - HEIGHT
         if self.cy < 0:
             self.cy = 0
         for obj in all_sprites:
