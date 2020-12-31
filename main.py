@@ -17,10 +17,12 @@ def terminate():
     pygame.quit()
     sys.exit()
 
+
 def setle(x, s=True):
     if s:
         return int((x * tile_width) / 50)
     return int((x * tile_height) / 50)
+
 
 def start_screen():
     intro_text = ["ЗАСТАВКА", "",
@@ -75,6 +77,7 @@ def load_level(filename):
     max_width = max(map(len, level_map))
 
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+
 
 def generate_level(level):
     new_player, x, y = None, None, None
