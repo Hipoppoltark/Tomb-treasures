@@ -142,13 +142,13 @@ class Hero(pygame.sprite.Sprite):
         new_pos_y = self.pos_y
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w:
+                if event.key == pygame.K_w or event.key == pygame.K_UP:
                     new_pos_y -= 1
-                elif event.key == pygame.K_s:
+                elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
                     new_pos_y += 1
-                elif event.key == pygame.K_a:
+                elif event.key == pygame.K_a or event.key == pygame.K_LEFT:
                     new_pos_x -= 1
-                elif event.key == pygame.K_d:
+                elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
                     new_pos_x += 1
         ok = True
         if new_pos_x >= level_x or new_pos_y >= level_y or new_pos_x < 0 or new_pos_y < 0:
@@ -306,7 +306,7 @@ class Things(pygame.sprite.Sprite):
                     self.change_surface()
 
 
-class Camera:
+class Camera():
     def __init__(self):
         self.cx = self.cy = 0
 
@@ -330,6 +330,167 @@ class Camera:
                 self.move(obj)
 
 
+class TinyHelper(pygame.sprite.Sprite):
+    def __init__(self, helper_type, way, speed=0):
+        super().__init__(all_sprites)
+        self.type = helper_type
+        self.image = tiny_helpers[self.type]
+        self.rect = self.image.get_rect().move(0, 0)
+        self.way = way
+        self.step = 1
+        self.speed = speed
+        self.pos_x, self.pos_y = self.way[self.step][0], self.way[self.step][1]
+        self.alive = True
+
+    def update_rect(self):
+        self.rect.topleft = (
+            self.rect.x + (tile_width - self.rect.width) // 2,
+            margin + self.rect.y + (tile_height - self.rect.height) // 2
+        )
+
+    def update(self, time, events):
+        xsign = ysign = 1
+        if self.way[self.step][0] - self.way[self.step - 1][0]:
+            xs1 = self.way[self.step][0] - self.way[self.step - 1][0]
+            xsign = (xs1 // abs(xs1))
+            self.pos_x += self.speed * time * xsign
+        if self.way[self.step][1] - self.way[self.step - 1][1]:
+            ys1 = self.way[self.step][1] - self.way[self.step - 1][1]
+            ysign = (ys1 // abs(ys1))
+            self.pos_y += self.speed * time * ysign
+        if (self.pos_x * xsign > self.way[self.step][0] * xsign or
+                self.pos_y * ysign > self.way[self.step][1] * ysign):
+            self.step = (self.step + 1) % len(self.way)
+            self.pos_x, self.pos_y = self.way[self.step - 1][0], self.way[self.step - 1][1]
+        if self.alive and self.way[self.step - 1][2]:
+            fon = pygame.transform.scale(load_image('scarabeum_question-1.png'), (WIDTH, HEIGHT))
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.pos[0] // tile_width == self.rect.x // tile_width and \
+                            event.pos[1] // tile_height == self.rect.y // tile_height and \
+                            (player.pos_x - self.pos_x) ** 2 + (player.pos_y - self.pos_y) ** 2 <= 2:
+                        if self.type == 'scarabeus':
+                            bttdo = Button(fon,
+                                           220, 390, 135, 50,
+                                           'Далее',
+                                           (0, 0, 0), (200, 200, 200), (255, 255, 255),
+                                           5,
+                                           [pygame.K_KP_ENTER, pygame.K_SPACE, pygame.K_RIGHT])
+                            bttdo.draw()
+                            bttca = Button(fon,
+                                           60, 390, 135, 50,
+                                           'Назад',
+                                           (0, 0, 0), (200, 200, 200), (255, 255, 255),
+                                           5,
+                                           [pygame.K_ESCAPE, pygame.K_DELETE])
+                            word_taker = WordTaker(fon, (0, 0, 0), 60, 300, 210, 100, 7)
+                            bttca.draw()
+                            screen.blit(fon, (0, 0))
+                            font = pygame.font.Font(None, 30)
+                            page, pages = 1, 3
+                            main_rect = (60, 60, 300, 300)
+                            s = []
+                            magic_word = 'ЧЕЛОВЕК'
+                            while True:
+                                for event in pygame.event.get():
+                                    if event.type == pygame.QUIT:
+                                        terminate()
+                                    if page == 1:
+                                        bttdo.draw()
+                                        bttca.draw()
+                                        for line in textes['scarabeus first'].split('\n'):
+                                            s.append(font.render(line, 5, (0, 0, 0)))
+                                        button_do = bttdo.check(event)
+                                        button_ca = bttca.check(event)
+                                    elif page == 2:
+                                        bttca.draw()
+                                        button_ca = bttca.check(event)
+                                        button_do = False
+                                        for line in textes['scarabeus second'].split('\n'):
+                                            s.append(font.render(line, 5, (0, 0, 0)))
+                                        word_taker.check(event)
+                                        word_taker.draw()
+                                        if word_taker == magic_word:
+                                            bttdo.draw()
+                                            button_do = bttca.check(event)
+                                    elif page == 3:
+                                        bttca.draw()
+                                        button_ca = bttca.check(event)
+                                        button_do = False
+                                        for line in textes['scarabeus third'].split('\n'):
+                                            s.append(font.render(line, 5, (0, 0, 0)))
+                                        if 1:
+                                            bttdo.draw()
+                                            button_do = bttca.check(event)
+                                    if button_do:
+                                        page += 1
+                                        if page == 2:
+                                            pygame.draw.rect(screen, pygame.Color(0, 0, 0, 127), bttdo.rect, 0)
+                                    if button_ca or page > pages:
+                                        return
+                                    pygame.draw.rect(screen, (255, 206, 127), main_rect, 0)
+                                    for n, i in enumerate(s):
+                                        screen.blit(i, pygame.Rect(210 - i.get_width() // 2,
+                                                                   110 - len(s) * (i.get_height() + 10) * n // 2 +
+                                                                   (i.get_height() + 60) * n,
+                                                                   i.get_width() // 2, i.get_height() + 10))
+                                    s = []
+                                pygame.display.flip()
+        self.update_rect()
+
+
+class Button():
+    def __init__(self, screen, x, y, w, h, txt, col1, col2, colt, line_width, eq_type=[]):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.line_width = line_width
+        self.screen = screen
+        self.cols = [col1, col2, colt]
+        self.text = txt
+        self.string_rendered = pygame.font.Font(None, 30).render(self.text, 5, self.cols[2])
+        self.textRect = pygame.Rect(x + w // 2 - self.string_rendered.get_width() // 2,
+                                    y + h // 2 - self.string_rendered.get_height() // 2,
+                                    self.string_rendered.get_width(),
+                                    self.string_rendered.get_height())
+        self.eq_keys = eq_type
+
+    def draw(self):
+        pygame.draw.rect(self.screen, self.cols[0], self.rect, 0)
+        pygame.draw.rect(self.screen, self.cols[1], self.rect, self.line_width)
+        self.screen.blit(self.string_rendered, self.textRect)
+
+    def check(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if (event.pos[1] > self.rect.top and event.pos[1] < self.rect.bottom and
+                    event.pos[0] > self.rect.left and event.pos[0] < self.rect.right):
+                return True
+        if event.type == pygame.KEYDOWN:
+            if event.key in self.eq_keys:
+                return True
+        return False
+
+    def change_cols(self, col1, col2, colt):
+        self.cols = [col1, col2, colt]
+        self.string_rendered = pygame.font.Font(None, 30).render(self.text, True, colt)
+
+
+class WordTaker():
+    def __init__(self, screen, color, x, y, w, h, n):
+        self.text = '_' * n
+        self.rect = pygame.Rect(x, y, w, h)
+        self.screen = screen
+        self.color = color
+
+    def draw(self):
+        self.screen.blit(pygame.font.Font(None, 30).render(self.text, True, self.color), self.rect)
+
+    def check(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.unicode <= 'z' and event.unicode >= 'A' and self.text.count('_'):
+                self.text = (self.text[:(len(self.text) - self.text.count('_'))] + pygame.key.name(event.key).upper() +
+                             self.text[(len(self.text) - self.text.count('_') + 1):])
+            if event.key == pygame.K_BACKSPACE and len(self.text) != self.text.count('_'):
+                self.text = (self.text[:(len(self.text) - self.text.count('_')) - 1] + '_' * (self.text.count('_') + 1))
+
 clock = pygame.time.Clock()
 all_sprites         = pygame.sprite.Group()
 tiles_group         = pygame.sprite.Group()
@@ -352,12 +513,21 @@ interaction_objects_images = {
     'sand': load_image('sand.png', format="png"),
     'chest': load_image('chest.png', format="png")
 }
+tiny_helpers = {
+    'scarabeus': load_image('scarabeus.png', format="png")
+}
+textes = {
+    'scarabeus first': """Один мой знакомый \n рассказал мне эту загадку""",
+    'scarabeus second': 'Кто утром ходит на четырех ногах\n Днем на двух \n А вечером на трех?',
+    'scarabeus third': 'Да \n Это -человек'
+}
 
 TombWall()
 Entry()
 background = Background()
 inventory = Inventory()
 camera = Camera()
+scarabeus = TinyHelper('scarabeus', [(1, 3, True), (1, 5, True), (4, 5, True), (4, 3, True)], 1 / 1000)
 
 level = load_level("level1.txt")
 player, level_x, level_y, key_coors = generate_level(level)
@@ -370,7 +540,9 @@ while True:
     for event in events:
         if event.type == pygame.QUIT:
             terminate()
+    time = clock.tick(FPS)
     player.update(events)
+    scarabeus.update(time, events)
     camera.update(player)
     things.update(events)
     interaction_objects.update(events)
@@ -380,5 +552,4 @@ while True:
     interaction_objects.draw(screen)
     things.draw(screen)
     pygame.display.flip()
-    clock.tick(FPS)
 terminate()
