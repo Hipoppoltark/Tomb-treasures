@@ -32,21 +32,27 @@ def load_image(name, color_key=None, format="jpg"):
 
 
 def start_screen():
-    intro_text = ["ЗАСТАВКА", "",
-                  "Правила игры",
-                  "Если в правилах несколько строк,",
-                  "приходится выводить их построчно"]
+    intro_text = ["Tomb Treasures", "", "", "", "", "",
+                  "Начни путь приключений",
+                  "Нажми на кнопку для начала"]
 
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
+    font = pygame.font.Font("fonts/konstanting.ttf", 30)
+    text_coord = 60
+    margin_text = 370
+    colors = ["black", (181, 184, 26)]
+    for i, line in enumerate(intro_text):
+        if i < 2:
+            string_rendered = font.render(line, 1, pygame.Color(colors[0]))
+        else:
+            string_rendered = font.render(line, 1, pygame.Color(colors[1]))
         intro_rect = string_rendered.get_rect()
-        text_coord += 10
+        text_coord += 15
         intro_rect.top = text_coord
-        intro_rect.x = 10
+        intro_rect.x = margin_text
+        if i > 3:
+            margin_text -= 20
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
@@ -95,7 +101,6 @@ class TombWall(pygame.sprite.Sprite):
         self.image_entry = load_image("entry.png")
         self.rect_entry = self.image_entry.get_rect()
         self.pos_x = self.pos_y = 0
-
 
 
 class Background(pygame.sprite.Sprite):
@@ -269,8 +274,8 @@ class Entry(InteractionObjects):
     def update(self, events):
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.pos[0]  <= self.rect.right and event.pos[0]  >= self.rect.left and \
-                    event.pos[1] <= self.rect.bottom and event.pos[0] >= self.rect.top and \
+                if event.pos[0] <= self.rect.right and event.pos[0]  >= self.rect.left and \
+                        event.pos[1] <= self.rect.bottom and event.pos[0] >= self.rect.top and \
                         player.pos_x in [7, 8, 9] and player.pos_y in [3]:
                     self.closer_view()
                     return
@@ -293,7 +298,7 @@ class Entry(InteractionObjects):
                     return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if 'lense' in inventory.content:
-                        if  ((event.pos[0] - self.lense_pX) ** 2 + (event.pos[1] - self.lense_pY) ** 2 <=
+                        if ((event.pos[0] - self.lense_pX) ** 2 + (event.pos[1] - self.lense_pY) ** 2 <=
                                 self.lense_pR ** 2):
                             bttca.close()
                             self.open()
@@ -364,7 +369,6 @@ class Things(pygame.sprite.Sprite):
         else:
             self.image = self.image_orig
             self.rect, self.rect_magnified = self.rect_magnified, self.rect
-
 
     def update(self, events):
         for event in events:
@@ -547,8 +551,6 @@ class TinyHelper(pygame.sprite.Sprite):
         self.alive = True
 
 
-
-
 class Button():
     def __init__(self, screen, x, y, w, h, txt, col1, col2, colt, line_width, eq_type=[]):
         self.rect = pygame.Rect(x, y, w, h)
@@ -615,6 +617,7 @@ class WordTaker():
             if event.key == pygame.K_BACKSPACE and len(self.text) != self.text.count('_'):
                 self.text = (self.text[:(len(self.text) - self.text.count('_')) - 1] + '_' * (self.text.count('_') + 1))
 
+
 clock = pygame.time.Clock()
 all_sprites         = pygame.sprite.Group()
 tiles_group         = pygame.sprite.Group()
@@ -646,9 +649,9 @@ tiny_helpers = {
     'scarabeus': load_image('scarabeus.png', format="png")
 }
 textes = {
-    'scarabeus first': """Один мой знакомый \n рассказал мне эту загадку""",
-    'scarabeus second': 'Кто утром ходит на четырех ногах\n Днем на двух \n А вечером на трех?',
-    'scarabeus third': 'Да \n Это - человек! \n Твои  знания \n достоины вознаграждения',
+    'scarabeus first': """Если ты скажешь\n мне ключевое слово\n Я дам тебе ключ \nдля входа в гробницу""",
+    'scarabeus second': 'Используй все то, что у тебя есть',
+    'scarabeus third': 'Да \n Человек - ключ ко всему!',
     'lense getting': 'Вы получили линзу'
 }
 scarabeus_way = [(15, 6, False), (15, 9, True), (15, 6, True), (12, 6, False), (16, 6, False),
@@ -662,6 +665,7 @@ inventory = Inventory()
 camera = Camera()
 scarabeus = TinyHelper('scarabeus', scarabeus_way, 1 / 1000)
 
+start_screen()
 level = load_level("level1.txt")
 player, level_x, level_y, key_coors = generate_level(level)
 things_dict = {
