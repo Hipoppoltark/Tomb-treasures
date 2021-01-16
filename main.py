@@ -77,8 +77,12 @@ def generate_level(level):
             elif level[y][x] == '#':
                 Tile(random.choice(['cactus', 'tumbleweed']), x, y)
             elif level[y][x] == 's':
-                InteractionObjects("sand", "shovel", x, y)
-                key_coors.append((x, y))
+                if len(level) == 11:
+                    InteractionObjects("sand", "shovel", x, y)
+                    key_coors.append((x, y))
+                else:
+                    InteractionObjects("sarcophag", "crowbar", x, y - 1)
+                    key_coors.append((x, y - 1))
             elif level[y][x] == 't':
                 Things('shovel', x, y)
             elif level[y][x] == 'c':
@@ -87,9 +91,48 @@ def generate_level(level):
                 Tile('invisible', x, y)
             elif level[y][x] == '@':
                 new_player = Hero(x, y)
-    key_coors = random.choice(key_coors)
+            elif level[y][x] == "b":
+                Things('crowbar', x, y)
+    if key_coors:
+        key_coors = random.choice(key_coors)
     # вернем игрока, а также размер поля в клетках
     return new_player, x + 1, y + 1, key_coors
+
+
+def fin():
+    global all_sprites, tiles_group, things, interaction_objects, inventory_group, helpers_group
+    global player, level_x, level_y, key_coors, margin, level, things_dict
+    margin = 0
+    all_sprites = pygame.sprite.Group()
+    tiles_group = pygame.sprite.Group()
+    things = pygame.sprite.Group()
+    interaction_objects = pygame.sprite.Group()
+    inventory_group = pygame.sprite.Group()
+    helpers_group = pygame.sprite.Group()
+
+    Background("level2.jpg", 0)
+    inventory = Inventory()
+    level = load_level("level2.txt")
+    player, level_x, level_y, key_coors = generate_level(level)
+    things_dict = {
+        'key': Things("key", *key_coors, state=False)
+    }
+    while True:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                terminate()
+        player.update(events)
+        things.update(events)
+        interaction_objects.update(events)
+        all_sprites.draw(screen)
+        tiles_group.draw(screen)
+        inventory_group.draw(screen)
+        interaction_objects.draw(screen)
+        things.draw(screen)
+        pygame.display.flip()
+    terminate()
+    return
 
 
 class TombWall(pygame.sprite.Sprite):
@@ -104,11 +147,11 @@ class TombWall(pygame.sprite.Sprite):
 
 
 class Background(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, name, margin_top):
         super().__init__(all_sprites)
-        self.image = load_image("background.jpg")
+        self.image = load_image(name)
         self.rect = self.image.get_rect()
-        self.rect.y = setle(185, 0)
+        self.rect.y = setle(margin_top, 0)
         self.type = "background"
         self.pos_x = self.rect.x // tile_width
         self.pos_y = self.rect.y // tile_height
@@ -222,7 +265,7 @@ class InteractionObjects(pygame.sprite.Sprite):
     def update_rect(self):
         self.rect.topleft = (
             tile_width * self.pos_x + (tile_width - self.rect.width) // 2,
-            margin + tile_height * self.pos_y + (tile_height - self.rect.height) // 2)
+            margin + tile_height * self.pos_y)
 
     def check_need_thing(self):
         if self.thing in inventory.content:
@@ -253,9 +296,12 @@ class InteractionObjects(pygame.sprite.Sprite):
                         if self.pos_x == things_dict['key'].pos_x and self.pos_y == things_dict['key'].pos_y:
                             self.add_to_inventory(things_dict['key'])
                         self.die()
-                    elif self.type == "chest":
+                    elif self.type == "chest":  # На доработку
                         if self.pos_x == things_dict['note'].pos_x and self.pos_y == things_dict['note'].pos_y:
                             self.add_to_inventory(things_dict['note'])
+                    elif self.type == "sarcophag":
+                        if self.pos_x == things_dict['key'].pos_x and self.pos_y == things_dict['key'].pos_y:
+                            self.add_to_inventory(things_dict['key'])
 
 
 class Entry(InteractionObjects):
@@ -321,17 +367,13 @@ class Entry(InteractionObjects):
                 if event.type == pygame.QUIT:
                     terminate()
                 elif bttgo.check(event):
-                    self.fin()
+                    fin()
                     return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.pos[0] <= 550 and event.pos[0] >= 360 and event.pos[1] <= HEIGHT and event.pos[1] >= 215:
-                        self.fin()
+                        fin()
                         return
             pygame.display.flip()
-
-    def fin(self):
-        # конец превого уровня
-        return
 
 
 class Things(pygame.sprite.Sprite):
@@ -387,7 +429,7 @@ class Things(pygame.sprite.Sprite):
                     self.change_surface()
 
 
-class Camera():
+class Camera:
     def __init__(self):
         self.cx = self.cy = 0
 
@@ -638,12 +680,14 @@ thing_images = {
     'key': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
     'note': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
     'lense': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
-    'scarabeus with lense': pygame.Surface((50, 50), pygame.SRCALPHA, 32)
+    'scarabeus with lense': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
+    'crowbar': load_image('crowbar.png', format="png")
 }
 interaction_objects_images = {
     'sand': load_image('sand.png', format="png"),
     'chest': load_image('chest.png', format="png"),
-    'entry': load_image('entry1.png', format="png")
+    'entry': load_image('entry1.png', format="png"),
+    'sarcophag': load_image('sarc.png', format="png")
 }
 tiny_helpers = {
     'scarabeus': load_image('scarabeus.png', format="png")
@@ -660,7 +704,7 @@ scarabeus_way = [(15, 6, False), (15, 9, True), (15, 6, True), (12, 6, False), (
 
 TombWall()
 Entry('entry', 'lense', 380, 16)
-background = Background()
+background = Background("background.jpg", 185)
 inventory = Inventory()
 camera = Camera()
 scarabeus = TinyHelper('scarabeus', scarabeus_way, 1 / 1000)
