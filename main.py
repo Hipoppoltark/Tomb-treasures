@@ -99,7 +99,7 @@ def generate_level(level):
     return new_player, x + 1, y + 1, key_coors
 
 
-def fin():
+def fin(number):
     global all_sprites, tiles_group, things, interaction_objects, inventory_group, helpers_group
     global player, level_x, level_y, key_coors, margin, level, things_dict
     margin = 0
@@ -109,14 +109,19 @@ def fin():
     interaction_objects = pygame.sprite.Group()
     inventory_group = pygame.sprite.Group()
     helpers_group = pygame.sprite.Group()
-
-    Background("level2.jpg", 0)
-    inventory = Inventory()
-    level = load_level("level2.txt")
-    player, level_x, level_y, key_coors = generate_level(level)
-    things_dict = {
-        'key': Things("key", *key_coors, state=False)
-    }
+    if number == 1:
+        Background("level2.jpg", 0)
+        inventory = Inventory()
+        level = load_level("level2.txt")
+        entry = Entry('entry2', 'lense', 380, 16)
+        player, level_x, level_y, key_coors = generate_level(level)
+        things_dict = {
+            'key': Things("key", *key_coors, state=False),
+            'note2': Things("note", *COOR_NOTE_ROOM_2, state=False),
+            'level_n': 2
+        }
+    if number == 2:
+        terminate()
     while True:
         events = pygame.event.get()
         for event in events:
@@ -125,10 +130,10 @@ def fin():
         player.update(events)
         things.update(events)
         interaction_objects.update(events)
+        interaction_objects.draw(screen)
         all_sprites.draw(screen)
         tiles_group.draw(screen)
         inventory_group.draw(screen)
-        interaction_objects.draw(screen)
         things.draw(screen)
         pygame.display.flip()
     terminate()
@@ -160,7 +165,8 @@ class Background(pygame.sprite.Sprite):
 class Hero(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites)
-        self.image = load_image("hero.png", format="png")
+        self.image = self.r_image = load_image("hero.png", format="png")
+        self.l_image = pygame.transform.flip(self.r_image, True, False)
         self.rect = self.image.get_rect().move(
             CELL_SIZE * pos_x, margin + CELL_SIZE * pos_y)
         self.pos_x = pos_x
@@ -184,9 +190,16 @@ class Hero(pygame.sprite.Sprite):
                 elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
                     new_pos_y += 1
                 elif event.key == pygame.K_a or event.key == pygame.K_LEFT:
+                    self.image = self.l_image
                     new_pos_x -= 1
                 elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+                    self.image = self.r_image
                     new_pos_x += 1
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.pos[0] < self.rect.x + self.rect.w // 2:
+                    self.image = self.l_image
+                elif event.pos[0] > self.rect.x + self.rect.w // 2:
+                    self.image = self.r_image
         ok = True
         if new_pos_x >= level_x or new_pos_y >= level_y or new_pos_x < 0 or new_pos_y < 0:
             ok = False
@@ -264,7 +277,7 @@ class InteractionObjects(pygame.sprite.Sprite):
 
     def update_rect(self):
         self.rect.topleft = (
-            tile_width * self.pos_x + (tile_width - self.rect.width) // 2,
+            tile_width * self.pos_x + abs(tile_width - self.rect.width) // 2,
             margin + tile_height * self.pos_y)
 
     def check_need_thing(self):
@@ -283,7 +296,7 @@ class InteractionObjects(pygame.sprite.Sprite):
     def add_to_inventory(self, thing):
         if self.check_need_thing() and thing.type not in inventory.content:
             inventory.add_thing(thing)
-            if self.type == "chest":
+            if self.type == "chest" and things_dict['level_n'] == 1:
                 scarabeus.live()
 
     def update(self, events):
@@ -297,8 +310,12 @@ class InteractionObjects(pygame.sprite.Sprite):
                             self.add_to_inventory(things_dict['key'])
                         self.die()
                     elif self.type == "chest":  # На доработку
-                        if self.pos_x == things_dict['note'].pos_x and self.pos_y == things_dict['note'].pos_y:
-                            self.add_to_inventory(things_dict['note'])
+                        if things_dict['level_n'] == 1:
+                            if self.pos_x == things_dict['note'].pos_x and self.pos_y == things_dict['note'].pos_y:
+                                self.add_to_inventory(things_dict['note'])
+                        elif things_dict['level_n'] == 2:
+                            if self.pos_x == things_dict['note2'].pos_x and self.pos_y == things_dict['note2'].pos_y:
+                                self.add_to_inventory(things_dict['note2'])
                     elif self.type == "sarcophag":
                         if self.pos_x == things_dict['key'].pos_x and self.pos_y == things_dict['key'].pos_y:
                             self.add_to_inventory(things_dict['key'])
@@ -307,56 +324,94 @@ class InteractionObjects(pygame.sprite.Sprite):
 class Entry(InteractionObjects):
     def __init__(self, obj_type, thing_for_action, x, y):
         super().__init__(obj_type, thing_for_action, x, y)
-        self.image = load_image("entry1.png")
-        self.rect = self.image.get_rect()
-        self.rect.x = setle(380, 1)
-        self.rect.y = 8
-        self.type = "entry"
-        self.pos_x = self.rect.x // tile_width
-        self.pos_y = self.rect.y / tile_height
-        self.big_image, self.open_image = load_image("big entry.jpg"), load_image("big entry2.jpg")
-        self.lense_pX, self.lense_pY, self.lense_pR = 450, 90, 30
+        if self.type == 'entry':
+            self.image = load_image("entry1.png")
+            self.rect = self.image.get_rect()
+            self.rect.x = setle(380, 1)
+            self.rect.y = 8
+            self.pos_x = self.rect.x // tile_width
+            self.pos_y = self.rect.y / tile_height
+            self.big_image, self.open_image = load_image("big entry.jpg"), load_image("big entry2.jpg")
+            self.lense_pX, self.lense_pY, self.lense_pR = 450, 90, 30
+        elif self.type == 'entry2':
+            self.image = load_image("entry2.png", format='png')
+            self.rect = self.image.get_rect()
+            self.rect.x = setle(400, 1)
+            self.rect.y = 225
+            self.pos_x = self.rect.x // tile_width
+            self.pos_y = self.rect.y / tile_height
+            self.big_image, self.open_image = load_image("big entry 3.0.jpg"), load_image("big entry 3.jpg")
+            self.wall_wheels = [WallWheel(107, 45, 15, True, 208, 80, [f"plates\plate1.{str(i + 1)}.png" for i in range(7)]),
+                           WallWheel(107, 45, 15, True, 334, 80, [f"plates\plate2.{str(i + 1)}.png" for i in range(7)]),
+                           WallWheel(107, 45, 15, True, 460, 80, [f"plates\plate3.{str(i + 1)}.png" for i in range(7)]),
+                           WallWheel(107, 45, 15, True, 586, 80, [f"plates\plate4.{str(i + 1)}.png" for i in range(7)])]
 
     def update(self, events):
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.pos[0] <= self.rect.right and event.pos[0]  >= self.rect.left and \
-                        event.pos[1] <= self.rect.bottom and event.pos[0] >= self.rect.top and \
-                        player.pos_x in [7, 8, 9] and player.pos_y in [3]:
-                    self.closer_view()
+                        event.pos[1] <= self.rect.bottom and event.pos[0] >= self.rect.top:
+                    if  (player.pos_x in [7, 8, 9] and player.pos_y in [3] and self.type == 'entry') or\
+                            (player.pos_x in [8, 9] and player.pos_y in [6] and self.type == 'entry2'):
+                        self.closer_view()
                     return
 
     def closer_view(self):
         fon = pygame.transform.scale(self.big_image, (WIDTH, HEIGHT))
         screen.blit(fon, (0, 0))
-        bttca = Button(screen,
-                       60, 390, 135, 50,
-                       'Назад',
-                       (0, 0, 0), (200, 200, 200), (255, 255, 255),
-                       5,
-                       [pygame.K_ESCAPE, pygame.K_BACKSPACE, pygame.K_DELETE])
-        while True:
-            bttca.draw()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    terminate()
-                elif bttca.check(event):
-                    return
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if 'lense' in inventory.content:
-                        if ((event.pos[0] - self.lense_pX) ** 2 + (event.pos[1] - self.lense_pY) ** 2 <=
-                                self.lense_pR ** 2):
-                            bttca.close()
-                            self.open()
-                            return
-            pygame.display.flip()
+        if self.type == 'entry':
+            bttca = Button(screen,
+                           60, 390, 135, 50,
+                           'Назад',
+                           (0, 0, 0), (200, 200, 200), (255, 255, 255),
+                           5,
+                           [pygame.K_ESCAPE, pygame.K_BACKSPACE, pygame.K_DELETE])
+            while True:
+                bttca.draw()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        terminate()
+                    elif bttca.check(event):
+                        return
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if 'lense' in inventory.content:
+                            if ((event.pos[0] - self.lense_pX) ** 2 + (event.pos[1] - self.lense_pY) ** 2 <=
+                                    self.lense_pR ** 2):
+                                bttca.close()
+                                self.open(1)
+                                return
+                pygame.display.flip()
+        elif self.type == 'entry2':
+            bttca = Button(screen,
+                           60, 390, 135, 50,
+                           'Назад',
+                           (0, 0, 0), (200, 200, 200), (255, 255, 255),
+                           5,
+                           [pygame.K_ESCAPE, pygame.K_BACKSPACE, pygame.K_DELETE])
+            while True:
+                bttca.draw()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        terminate()
+                    elif bttca.check(event):
+                        return
+                    for wall_wheel in self.wall_wheels:
+                        wall_wheel.check(event)
+                        if wall_wheel.current:
+                            wwc = self.wall_wheels.index(wall_wheel)
+                for wall_wheel in self.wall_wheels:
+                    wall_wheel.update()
+                if tuple(map(lambda x: x.number, self.wall_wheels)) == (3, 5, 4, 1):
+                    self.open(2)
+                plate_sprites.draw(screen)
+                pygame.display.flip()
 
-    def open(self):
+    def open(self, n):
         inventory.clear()
         fon = pygame.transform.scale(self.open_image, (WIDTH, HEIGHT))
         screen.blit(fon, (0, 0))
         bttgo = Button(screen,
-                       WIDTH // 2 - 80, 390, 150, 100,
+                       WIDTH // 2 - 70, 390, 150, 100,
                        'Войти',
                        (0, 0, 0), (200, 200, 200), (255, 255, 255),
                        5,
@@ -367,11 +422,11 @@ class Entry(InteractionObjects):
                 if event.type == pygame.QUIT:
                     terminate()
                 elif bttgo.check(event):
-                    fin()
+                    fin(n)
                     return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.pos[0] <= 550 and event.pos[0] >= 360 and event.pos[1] <= HEIGHT and event.pos[1] >= 215:
-                        fin()
+                        fin(n)
                         return
             pygame.display.flip()
 
@@ -402,12 +457,20 @@ class Things(pygame.sprite.Sprite):
             if self.type == "note":
                 self.image.fill(pygame.Color(122, 121, 121, 150))
                 self.font = pygame.font.Font(None, 35)
-                self.string_rendered = self.font.render(NOTE_TEXT, True, pygame.Color('black'))
-                self.intro_rect = self.string_rendered.get_rect()
-                self.intro_rect.top = 230
-                self.intro_rect.x = 340
-                pygame.draw.rect(self.image, pygame.Color(250, 232, 142), (320, 130, 250, 240))
-                self.image.blit(self.string_rendered, self.intro_rect)
+                if things_dict['level_n'] == 1:
+                    self.string_rendered = self.font.render(NOTE_TEXT, True, pygame.Color('black'))
+                    self.intro_rect = self.string_rendered.get_rect()
+                    self.intro_rect.top = 230
+                    self.intro_rect.x = 340
+                    pygame.draw.rect(self.image, pygame.Color(250, 232, 142), (320, 130, 250, 240))
+                    self.image.blit(self.string_rendered, self.intro_rect)
+                elif things_dict['level_n'] == 2:
+                    self.string_rendered = load_image('note2_inventory.png', format='png')
+                    self.intro_rect = self.string_rendered.get_rect()
+                    self.intro_rect.top = 80
+                    self.intro_rect.x = 180
+                    pygame.draw.rect(self.image, pygame.Color(250, 232, 142), (180, 70, 400, 360))
+                    self.image.blit(self.string_rendered, self.intro_rect)
         else:
             self.image = self.image_orig
             self.rect, self.rect_magnified = self.rect_magnified, self.rect
@@ -593,7 +656,7 @@ class TinyHelper(pygame.sprite.Sprite):
         self.alive = True
 
 
-class Button():
+class Button:
     def __init__(self, screen, x, y, w, h, txt, col1, col2, colt, line_width, eq_type=[]):
         self.rect = pygame.Rect(x, y, w, h)
         self.line_width = line_width
@@ -638,7 +701,7 @@ class Button():
         self.alive = True
 
 
-class WordTaker():
+class WordTaker:
     def __init__(self, screen, color, x, y, w, h, n=3, magic_word=''):
         self.text = '_' * n
         self.rect = pygame.Rect(x, y, w, h)
@@ -660,6 +723,51 @@ class WordTaker():
                 self.text = (self.text[:(len(self.text) - self.text.count('_')) - 1] + '_' * (self.text.count('_') + 1))
 
 
+class WallWheel:
+    def __init__(self, w, h, d, hv, x, y, plates):
+        self.plates = []
+        self.x, self.y = x, y
+        self.plate_width, self.plate_height = w, h
+        self.dist = d
+        self.hv = hv
+        for plate in plates:
+            plate_sprite = pygame.sprite.Sprite(plate_sprites)
+            plate_sprite.image = load_image(plate)
+            plate_sprite.rect = plate_sprite.image.get_rect()
+            plate_sprite.rect.x, plate_sprite.rect.y = x, y
+            self.plates.append(plate_sprite)
+        self.current = False
+        self.plates_number = len(self.plates)
+        self.number = 0
+
+    def update(self):
+        if self.hv:
+            for plate in self.plates:
+                plate.rect.y = self.y + (self.dist + self.plate_height) * self.plates.index(plate)
+        else:
+            for plate in self.plates:
+                plate.rect.x = self.x + (self.dist + self.plate_width) * self.plates.index(plate)
+
+    def check(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.pos[0] <= (self.x + self.plate_width + (self.plate_width + self.dist) *
+                                (self.plates_number - 1) * (not(self.hv))) and \
+                    event.pos[0] >= self.x and \
+                    event.pos[1] <= (self.y + self.plate_height + (self.plate_height + self.dist) *
+                                     (self.plates_number - 1) * self.hv) and \
+                    event.pos[1] >= self.y:
+                self.current = True
+            else:
+                self.current = False
+        if event.type == pygame.KEYDOWN and self.current:
+            if (event.key == pygame.K_UP or event.type == pygame.K_w):
+                self.number = (self.number - 1) % self.plates_number
+                self.plates = list(self.plates[1:]) + [self.plates[0]]
+            if (event.key == pygame.K_DOWN or event.type == pygame.K_s):
+                self.number = (self.number + 1) % self.plates_number
+                self.plates = [self.plates[-1]] + list(self.plates[:-1])
+
+
 clock = pygame.time.Clock()
 all_sprites         = pygame.sprite.Group()
 tiles_group         = pygame.sprite.Group()
@@ -668,6 +776,7 @@ interaction_objects = pygame.sprite.Group()
 inventory_group     = pygame.sprite.Group()
 board               = pygame.sprite.Group()
 helpers_group       = pygame.sprite.Group()
+plate_sprites       = pygame.sprite.Group()
 
 tile_images = {
     'cactus': load_image('cactus.png', format="png"),
@@ -679,6 +788,7 @@ thing_images = {
     'shovel': load_image('shovel.png', format="png"),
     'key': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
     'note': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
+    'note2': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
     'lense': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
     'scarabeus with lense': pygame.Surface((50, 50), pygame.SRCALPHA, 32),
     'crowbar': load_image('crowbar.png', format="png")
@@ -687,7 +797,8 @@ interaction_objects_images = {
     'sand': load_image('sand.png', format="png"),
     'chest': load_image('chest.png', format="png"),
     'entry': load_image('entry1.png', format="png"),
-    'sarcophag': load_image('sarc.png', format="png")
+    'sarcophag': load_image('sarc.png', format="png"),
+    'entry2': load_image('entry2.png', format="png")
 }
 tiny_helpers = {
     'scarabeus': load_image('scarabeus.png', format="png")
@@ -714,7 +825,8 @@ level = load_level("level1.txt")
 player, level_x, level_y, key_coors = generate_level(level)
 things_dict = {
     'key': Things("key", key_coors[0], key_coors[1], state=False),
-    'note': Things("note", *COOR_NOTE, state=False)
+    'note': Things("note", *COOR_NOTE, state=False),
+    'level_n': 1
 }
 while True:
     events = pygame.event.get()
