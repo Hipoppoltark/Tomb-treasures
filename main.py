@@ -124,7 +124,7 @@ def fin(number):
         level = load_level("level3.txt")
         player, level_x, level_y, key_coors = generate_level(level)
         text1 = "Создали: Полтавина Елизавета и Сафонов Борис"
-        text2 = "THE END"
+        text2 = "КОНЕЦ"
 
         font = pygame.font.Font(None, 50)
         string_rendered1 = font.render(text1, 1, (255, 255, 255))
