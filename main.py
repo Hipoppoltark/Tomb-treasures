@@ -121,7 +121,39 @@ def fin(number):
             'level_n': 2
         }
     if number == 2:
-        terminate()
+        intro_text = ["Tomb Treasures", "", "", "", "", "",
+                      "Спасибо за прохождение игры!",
+                      "В дальнейшем вас ждет больше уровней!"]
+
+        fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font("fonts/konstanting.ttf", 30)
+        text_coord = 60
+        margin_text = 370
+        colors = ["black", (181, 184, 26)]
+        for i, line in enumerate(intro_text):
+            if i < 2:
+                string_rendered = font.render(line, 1, pygame.Color(colors[0]))
+            else:
+                string_rendered = font.render(line, 1, pygame.Color(colors[1]))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 15
+            intro_rect.top = text_coord
+            intro_rect.x = margin_text
+            if i > 3:
+                margin_text -= 20
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.KEYDOWN or \
+                        event.type == pygame.MOUSEBUTTONDOWN:
+                    terminate()
+            pygame.display.flip()
+            clock.tick(FPS)
     while True:
         events = pygame.event.get()
         for event in events:
