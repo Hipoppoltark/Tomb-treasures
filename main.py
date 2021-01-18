@@ -2,7 +2,6 @@ import pygame
 import sys
 import os
 import random
-from math import fabs
 from config import *
 
 
@@ -373,7 +372,7 @@ class InteractionObjects(pygame.sprite.Sprite):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.pos[0] // tile_width == self.rect.x // tile_width and \
                    event.pos[1] // tile_height == self.rect.y // tile_height and \
-                   fabs(player.pos_x - self.pos_x) in [0, 1] and fabs(player.pos_y - self.pos_y) in [0, 1]:
+                   abs(player.pos_x - self.pos_x) in [0, 1] and abs(player.pos_y - self.pos_y) in [0, 1]:
                     if self.type == "sand":
                         if self.pos_x == things_dict['key'].pos_x and self.pos_y == things_dict['key'].pos_y:
                             self.add_to_inventory(things_dict['key'])
@@ -549,7 +548,7 @@ class Things(pygame.sprite.Sprite):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.pos[0] // tile_width == self.rect.x // tile_width and self.state and \
                    event.pos[1] // tile_height == self.rect.y // tile_height and \
-                   fabs(player.pos_x - self.pos_x) in [0, 1] and fabs(player.pos_y - self.pos_y) in [0, 1]:
+                   abs(player.pos_x - self.pos_x) in [0, 1] and abs(player.pos_y - self.pos_y) in [0, 1]:
                     inventory.add_thing(self)
                     if level[self.pos_y][self.pos_x] == 't':
                         level_y = level[self.pos_y]
@@ -897,6 +896,7 @@ things_dict = {
     'note': Things("note", *COOR_NOTE, state=False),
     'level_n': 1
 }
+pygame.display.set_caption('Tomb-treasures')
 while True:
     events = pygame.event.get()
     for event in events:
