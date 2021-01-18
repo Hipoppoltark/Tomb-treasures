@@ -121,6 +121,43 @@ def fin(number):
             'level_n': 2
         }
     if number == 2:
+        Background("Treasure Room.png", 0)
+        level = load_level("level3.txt")
+        player, level_x, level_y, key_coors = generate_level(level)
+        text1 = "Создали: Полтавина Елизавета и Сафонов Борис"
+        text2 = "THE END"
+
+        font = pygame.font.Font(None, 50)
+        string_rendered1 = font.render(text1, 1, (255, 255, 255))
+        string_rendered2 = font.render(text2, 1, (255, 255, 255))
+        intro_rect1 = string_rendered1.get_rect()
+        intro_rect1.top = 425
+        intro_rect1.x = 900
+        intro_rect2 = string_rendered2.get_rect()
+        intro_rect2.top = 425
+        intro_rect2.x = WIDTH // 2 - intro_rect2.w // 2
+        clock_last = pygame.time.Clock()
+        TIME = 0
+        while True:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    terminate()
+            player.update(events)
+            all_sprites.draw(screen)
+            time = clock_last.tick()
+            TIME += time
+            if TIME < 10000:
+                if intro_rect1.x > 20:
+                    intro_rect1.x -= time * 2 / 1000
+                screen.blit(string_rendered1, intro_rect1)
+            elif TIME > 13000:
+                break
+            else:
+                screen.blit(string_rendered2, intro_rect2)
+            pygame.display.flip()
+
+
         intro_text = ["Tomb Treasures", "", "", "", "", "",
                       "Спасибо за прохождение игры!",
                       "В дальнейшем вас ждет больше уровней!"]
